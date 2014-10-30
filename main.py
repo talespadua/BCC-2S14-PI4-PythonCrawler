@@ -11,17 +11,26 @@ def crawler(paginas):
         plain_text = source_code.text
         soup = BeautifulSoup(plain_text)
         atores = []
-        for link in soup.findAll('td', {'itemprop': 'actor'}):
+
+        for dir_link in soup.findAll('h4', {'class': 'dataHeaderWithBorder'}):
+            cabecalho = dir_link.string
+            if cabecalho == "Directed by ":
+                print(cabecalho)
+                body_tag = dir_link.findNext('tbody')
+                for tags in body_tag.findAll('a'):
+                    print(tags.string.strip())
+
+
+        for actorlink in soup.findAll('td', {'itemprop': 'actor'}):
             #title = link.h1.span.string
             #time = link.time.get("datetime")
             #print("Title: " + title)
             #print("Time: " + time)
             #atores.__add__(self, nome)
-            nome = link.a.span.string
-            print(nome)
+            nome = actorlink.a.span.string
+            atores.append(nome)
+            #print(nome)
 
         pagina += 1
-
-
 
 crawler(133093)
