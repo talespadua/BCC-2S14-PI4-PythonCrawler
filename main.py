@@ -63,7 +63,10 @@ def crawler(paginas):
                     dir_soup = get_soup("http://www.imdb.com/" + link)
                     for link in dir_soup.findAll('a', href=True):
                         if "birth_place" in link['href']:
-                            print(link.string)
+                            place = link.string.split(',')
+                            birth_place = place[len(place)-1].strip()
+                            print(birth_place)
+
 
             # if cabecalho == "Writing Credits":
             #     print(cabecalho)
@@ -72,12 +75,14 @@ def crawler(paginas):
             #         escritores.append(tags.string.strip())
             #         print(tags.string.strip())
             #
-            # if cabecalho == "Cast":
-            #     print(cabecalho)
-            #     body_tag = dir_link.findNext('table')
-            #     for tags in body_tag.findAll('td', {'class': 'itemprop'}):
-            #         atores.append(tags.a.span.string.strip())
-            #         print(tags.a.span.string.strip())
+
+            if cabecalho == "Cast":
+                print(cabecalho)
+                body_tag = dir_link.findNext('table')
+                for tags in body_tag.findAll('td', {'class': 'itemprop'}):
+                    atores.append(tags.a.span.string.strip())
+                    print(tags.a.span.string.strip())
+
             #
             # if cabecalho == "Produced by":
             #     print(cabecalho)
