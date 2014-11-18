@@ -70,7 +70,8 @@ def crawler(paginas):
 
         for infobar in soup.findAll('a', {'itemprop': 'url'}, href=True):
             if "country" in infobar['href']:
-                print(infobar.string)
+                movie_country = infobar.string
+                print(movie_country)
 
         for link in soup.findAll('table', {'class', 'cast_list'}):
             cast_count = 0
@@ -136,4 +137,4 @@ def crawler(paginas):
         nullPages = 0
         paginas += 1
 
-crawler(132993)
+crawler(133093)
