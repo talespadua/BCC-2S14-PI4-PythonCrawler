@@ -36,12 +36,11 @@ def crawler(paginas):
     max_page = 133093
     running = True
     try:
-        conn = psycopg2.connect("dbname='postgres' user='postgres' host='localhost' password='senha'")
+        conn = psycopg2.connect("dbname='pifour' user='postgres' host='localhost' port=5435 password='tirulipa'")
     except:
         print("I am unable to connect to the database")
 
     cur = conn.cursor()
-    # print(cur)
     #while running:
     while paginas <= max_page:
 
@@ -65,8 +64,7 @@ def crawler(paginas):
 
         for dir_link in soup.findAll('h1', {'class': 'header'}):
             movie_name = dir_link.contents[1].string.strip()
-            # cur.execute('INSERT INTO "movies" (id, nome) VALUES (%s, %s)', (paginas, movie_name))
-            #cur.execute('SELECT * FROM movies')
+            cur.execute('INSERT INTO "movies" (id, name) VALUES (%s, %s)', (paginas, movie_name))
             print(movie_name)
 
         for link in soup.findAll('a', href=True):
@@ -117,7 +115,7 @@ def crawler(paginas):
         for link in soup.findAll('span', {'itemprop': 'keywords'}):
             keyword = link.string
             print(keyword)
-
+        conn.commit()
         null_pages = 0
         paginas += 1
 
