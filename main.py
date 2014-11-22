@@ -17,7 +17,6 @@ def is_movie(soup):
                 return True
     return True
 
-
 def get_soup(url):
     try:
         source_code = requests.get(url)
@@ -36,20 +35,20 @@ def crawler(paginas):
     max_page = 133093
     running = True
     try:
-        conn = psycopg2.connect("dbname='pifour' user='postgres' host='localhost' port=5435 password='tirulipa'")
+        conn = psycopg2.connect("dbname='pifour' user='postgres' host='localhost' port=5435 password='senha'")
     except:
         print("I am unable to connect to the database")
 
     cur = conn.cursor()
     #while running:
     while paginas <= max_page:
-
-        atores = []
-        diretores = []
-        escritores = []
-        produtores = []
-        generos = []
+        print("reading page id number " + str(paginas))
+        actors = []
+        directors = []
+        genres = []
+        keywords = []
         null_pages = 0
+        launch_year = None
 
         #Here the crawler get info on main Movie page
         soup = get_soup("http://www.imdb.com/title/tt" + str(paginas))
@@ -64,57 +63,80 @@ def crawler(paginas):
 
         for dir_link in soup.findAll('h1', {'class': 'header'}):
             movie_name = dir_link.contents[1].string.strip()
-            cur.execute('INSERT INTO "movies" (id, name) VALUES (%s, %s)', (paginas, movie_name))
-            print(movie_name)
 
         for link in soup.findAll('a', href=True):
             if "/year/" in link['href']:
                 launch_year = link.string
-                print(launch_year)
 
         for infobar in soup.findAll('span', {'itemprop': 'genre'}):
-            #generos.append(infobar.string)
-            genre = infobar.string
-            print(genre)
+            genres.append(infobar.string)
 
         for infobar in soup.findAll('a', {'itemprop': 'url'}, href=True):
             if "country" in infobar['href']:
                 movie_country = infobar.string
-                print(movie_country)
 
         for link in soup.findAll('div', {'itemprop': 'director'}):
             for dir_link in link.findAll('span', {'itemprop': 'name'}):
+                country = False
                 director_name = dir_link.string
-                directo_profile = dir_link.parent['href']
-                print(director_name)
-                director_soup = get_soup("http://www.imdb.com/" + directo_profile)
+                director_profile = dir_link.parent['href']
+                director_soup = get_soup("http://www.imdb.com/" + director_profile)
                 if director_soup is not None:
                     for director_link in director_soup.findAll('a', href=True):
                         if "birth_place" in director_link['href']:
                             place = director_link.string.split(',')
                             birth_place = place[len(place)-1].strip()
-                            print(birth_place)
+                            country = True
+                if country:
+                    directors.append((director_name, birth_place))
+                else:
+                    directors.append((director_name, None))
+
 
         for link in soup.findAll('table', {'class', 'cast_list'}):
             cast_count = 0
             for tags in link.findAll('span', {'itemprop': 'name'}):
+                country = False
                 actor_profile = tags.parent['href']
                 actor_name = tags.string
-                print(actor_name)
                 actor_soup = get_soup("http://www.imdb.com/" + actor_profile)
                 if actor_soup is not None:
                     for actor_link in actor_soup.findAll('a', href=True):
                         if "birth_place" in actor_link['href']:
                             place = actor_link.string.split(',')
                             birth_place = place[len(place)-1].strip()
-                            print(birth_place)
+                            country = True
+                if country:
+                    actors.append((actor_name, birth_place))
+                else:
+                    actors.append((actor_name, None))
                 cast_count += 1
                 if cast_count > 7:
                     break
 
         for link in soup.findAll('span', {'itemprop': 'keywords'}):
             keyword = link.string
-            print(keyword)
+            keywords.append(keyword)
+
+        print(movie_name + ", " + movie_country + ", " + launch_year)
+        #insert movie values
+        # cur.execute('INSERT INTO "movies" (id, name, release_date) '
+        #             'VALUES (%s, %s, %s)', (paginas, movie_name, launch_year))
+
+        for genre in genres:
+            print(genre)
+
+        for d in directors:
+            print(d[0] + ", " + d[1])
+
+        for a in actors:
+            print(a[0] + ", " + a[1])
+
+        for k in keywords:
+            print(k)
+        #insert genre values
+        # cur.execute('INSERT INTO "genres" (name, country)c
+
         conn.commit()
         null_pages = 0
         paginas += 1
