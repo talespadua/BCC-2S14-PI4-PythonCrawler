@@ -48,9 +48,12 @@ def crawler(paginas):
         genres = []
         keywords = []
         null_pages = 0
+
+        #Connections to profile pages take long time. Checking to avoid unnecessary connections. Hope it works =p
+        visited_actors_links = []
+        visited_directors_link = []
         launch_year = None
 
-        #Here the crawler get info on main Movie page
         soup = get_soup("http://www.imdb.com/title/tt" + str(paginas))
         if soup is None:
             null_pages += 1
@@ -80,13 +83,15 @@ def crawler(paginas):
                 country = False
                 director_name = dir_link.string
                 director_profile = dir_link.parent['href']
-                director_soup = get_soup("http://www.imdb.com/" + director_profile)
-                if director_soup is not None:
-                    for director_link in director_soup.findAll('a', href=True):
-                        if "birth_place" in director_link['href']:
-                            place = director_link.string.split(',')
-                            birth_place = place[len(place)-1].strip()
-                            country = True
+                if director_profile not in visited_directors_link:
+                    visited_directors_link.append(director_profile)
+                    director_soup = get_soup("http://www.imdb.com/" + director_profile)
+                    if director_soup is not None:
+                        for director_link in director_soup.findAll('a', href=True):
+                            if "birth_place" in director_link['href']:
+                                place = director_link.string.split(',')
+                                birth_place = place[len(place)-1].strip()
+                                country = True
                 if country:
                     directors.append((director_name, birth_place))
                 else:
@@ -97,19 +102,22 @@ def crawler(paginas):
             cast_count = 0
             for tags in link.findAll('span', {'itemprop': 'name'}):
                 country = False
-                actor_profile = tags.parent['href']
                 actor_name = tags.string
-                actor_soup = get_soup("http://www.imdb.com/" + actor_profile)
-                if actor_soup is not None:
-                    for actor_link in actor_soup.findAll('a', href=True):
-                        if "birth_place" in actor_link['href']:
-                            place = actor_link.string.split(',')
-                            birth_place = place[len(place)-1].strip()
-                            country = True
+                actor_profile = tags.parent['href']
+                if actor_profile not in visited_actors_links:
+                    visited_actors_links.append(actor_profile)
+                    actor_soup = get_soup("http://www.imdb.com/" + actor_profile)
+                    if actor_soup is not None:
+                        for actor_link in actor_soup.findAll('a', href=True):
+                            if "birth_place" in actor_link['href']:
+                                place = actor_link.string.split(',')
+                                birth_place = place[len(place)-1].strip()
+                                country = True
                 if country:
                     actors.append((actor_name, birth_place))
                 else:
                     actors.append((actor_name, None))
+                #To avoid get data from too many secondary actors, I limited the number to 8
                 cast_count += 1
                 if cast_count > 7:
                     break
@@ -118,24 +126,52 @@ def crawler(paginas):
             keyword = link.string
             keywords.append(keyword)
 
+        #End crawling, start to put values to DATABASE
+
         print(movie_name + ", " + movie_country + ", " + launch_year)
-        #insert movie values
-        # cur.execute('INSERT INTO "movies" (id, name, release_date) '
-        #             'VALUES (%s, %s, %s)', (paginas, movie_name, launch_year))
+
+        cur.execute("SELECT id FROM movies WHERE id = %s", (paginas,))
+        if cur.fetchone() is None:
+            cur.execute('INSERT INTO "movies" (id, name, release_date) '
+                        'VALUES (%s, %s, %s)', (paginas, movie_name, launch_year))
 
         for genre in genres:
             print(genre)
+            cur.execute("SELECT genre FROM genres WHERE genre = %s", (genre,))
+            if cur.fetchone() is None:
+                cur.execute("INSERT INTO genres (genre) VALUES (%s)", (genre,))
+            cur.execute("SELECT * FROM genres WHERE genre = %s", (genre,))
+            genre_object = cur.fetchone()
+            cur.execute("INSERT INTO movie_genres (id_movie, id_genre) VALUES (%s, %s)", (paginas, genre_object[0]))
 
         for d in directors:
             print(d[0] + ", " + d[1])
+            cur.execute("SELECT name FROM directors WHERE name = %s", (d[0],))
+            if cur.fetchone() is None:
+                cur.execute("INSERT INTO directors (name, country) VALUES (%s, %s)", (d[0], d[1]))
+            cur.execute("SELECT * FROM directors WHERE name = %s", (d[0],))
+            director_object = cur.fetchone()
+            cur.execute("INSERT INTO movie_directors (id_movie, id_director)"
+                        " VALUES (%s, %s)", (paginas, director_object[0]))
 
         for a in actors:
             print(a[0] + ", " + a[1])
+            cur.execute("SELECT name FROM actors WHERE name = %s", (a[0],))
+            if cur.fetchone() is None:
+                cur.execute("INSERT INTO actors (name, country) VALUES (%s, %s)", (a[0], a[1]))
+            cur.execute("SELECT * FROM actors WHERE name = %s", (a[0],))
+            actor_object = cur.fetchone()
+            cur.execute("INSERT INTO movie_actors (id_movie, id_actor)"
+                        " VALUES (%s, %s)", (paginas, actor_object[0]))
 
         for k in keywords:
             print(k)
-        #insert genre values
-        # cur.execute('INSERT INTO "genres" (name, country)c
+            cur.execute("SELECT keyword FROM keywords WHERE keyword = %s", (k,))
+            if cur.fetchone() is None:
+                cur.execute("INSERT INTO keywords (keyword) VALUES (%s)", (k,))
+            cur.execute("SELECT * FROM keywords WHERE keyword = %s", (k,))
+            keyword_object = cur.fetchone()
+            cur.execute("INSERT INTO movies_keywords (id_movie, id_keyword) VALUES (%s, %s)", (paginas, keyword_object[0]))
 
         conn.commit()
         null_pages = 0
