@@ -1,7 +1,7 @@
 __author__ = 'tales.cpadua'
 
 import requests
-
+import datetime
 from bs4 import BeautifulSoup
 import psycopg2
 
@@ -32,26 +32,29 @@ def get_soup(url):
     return soup
 
 def crawler(paginas):
-    max_page = 133093
-    running = True
+    # max_page = 133093
+    # running = True
+    visited_actors_links = []
+    visited_directors_link = []
+    null_pages = 0
     try:
-        conn = psycopg2.connect("dbname='pifour' user='postgres' host='localhost' port=5435 password='senha'")
+        conn = psycopg2.connect("dbname='pifour' user='postgres' host='localhost' port=5432 password='suamae'")
     except:
         print("I am unable to connect to the database")
 
     cur = conn.cursor()
-    #while running:
-    while paginas <= max_page:
+    while True:
+        if null_pages > 50:
+            break
         print("reading page id number " + str(paginas))
         actors = []
         directors = []
         genres = []
         keywords = []
+        countries = []
         null_pages = 0
 
         #Connections to profile pages take long time. Checking to avoid unnecessary connections. Hope it works =p
-        visited_actors_links = []
-        visited_directors_link = []
         launch_year = None
 
         soup = get_soup("http://www.imdb.com/title/tt" + str(paginas))
@@ -76,7 +79,7 @@ def crawler(paginas):
 
         for infobar in soup.findAll('a', {'itemprop': 'url'}, href=True):
             if "country" in infobar['href']:
-                movie_country = infobar.string
+                countries.append(infobar.string)
 
         for link in soup.findAll('div', {'itemprop': 'director'}):
             for dir_link in link.findAll('span', {'itemprop': 'name'}):
@@ -128,7 +131,8 @@ def crawler(paginas):
 
         #End crawling, start to put values to DATABASE
 
-        print(movie_name + ", " + movie_country + ", " + launch_year)
+        print(movie_name + ", " + launch_year + " ")
+        print(datetime.datetime.now().strftime("%y-%m-%d-%H-%M"))
 
         cur.execute("SELECT id FROM movies WHERE id = %s", (paginas,))
         if cur.fetchone() is None:
@@ -136,7 +140,6 @@ def crawler(paginas):
                         'VALUES (%s, %s, %s)', (paginas, movie_name, launch_year))
 
         for genre in genres:
-            print(genre)
             cur.execute("SELECT genre FROM genres WHERE genre = %s", (genre,))
             if cur.fetchone() is None:
                 cur.execute("INSERT INTO genres (genre) VALUES (%s)", (genre,))
@@ -144,8 +147,15 @@ def crawler(paginas):
             genre_object = cur.fetchone()
             cur.execute("INSERT INTO movie_genres (id_movie, id_genre) VALUES (%s, %s)", (paginas, genre_object[0]))
 
+        for country in countries:
+            cur.execute("SELECT country FROM countries WHERE country = %s", (country,))
+            if cur.fetchone() is None:
+                cur.execute("INSERT INTO countries (country) VALUES (%s)", (country,))
+            cur.execute("SELECT * FROM countries WHERE country = %s", (country,))
+            country_object = cur.fetchone()
+            cur.execute("INSERT INTO movie_countries (id_movie, id_country) VALUES (%s, %s)", (paginas, country_object[0]))
+
         for d in directors:
-            print(d[0] + ", " + d[1])
             cur.execute("SELECT name FROM directors WHERE name = %s", (d[0],))
             if cur.fetchone() is None:
                 cur.execute("INSERT INTO directors (name, country) VALUES (%s, %s)", (d[0], d[1]))
@@ -155,7 +165,6 @@ def crawler(paginas):
                         " VALUES (%s, %s)", (paginas, director_object[0]))
 
         for a in actors:
-            print(a[0] + ", " + a[1])
             cur.execute("SELECT name FROM actors WHERE name = %s", (a[0],))
             if cur.fetchone() is None:
                 cur.execute("INSERT INTO actors (name, country) VALUES (%s, %s)", (a[0], a[1]))
@@ -165,7 +174,6 @@ def crawler(paginas):
                         " VALUES (%s, %s)", (paginas, actor_object[0]))
 
         for k in keywords:
-            print(k)
             cur.execute("SELECT keyword FROM keywords WHERE keyword = %s", (k,))
             if cur.fetchone() is None:
                 cur.execute("INSERT INTO keywords (keyword) VALUES (%s)", (k,))
@@ -177,4 +185,4 @@ def crawler(paginas):
         null_pages = 0
         paginas += 1
 
-crawler(133093)
+crawler(21781)
