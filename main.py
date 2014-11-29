@@ -38,7 +38,7 @@ def crawler(paginas):
     visited_directors_link = []
     null_pages = 0
     try:
-        conn = psycopg2.connect("dbname='pifour' user='postgres' host='localhost' port=5432 password='senha'")
+        conn = psycopg2.connect("dbname='pifour' user='postgres' host='localhost' port=5432 password='suamae'")
     except:
         print("I am unable to connect to the database")
 
@@ -185,4 +185,4 @@ def crawler(paginas):
         null_pages = 0
         paginas += 1
 
-crawler(21781)
+crawler(31805)

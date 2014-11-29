@@ -7,7 +7,7 @@ import pygame
 from pygame.locals import *
 
 try:
-    conn = psycopg2.connect("dbname='pifour' user='postgres' host='localhost' port=5432 password='senha'")
+    conn = psycopg2.connect("dbname='pifour' user='postgres' host='localhost' port=5432 password='suamae'")
 except:
     print("I am unable to connect to the database")
 
@@ -29,10 +29,10 @@ country_images.append(pygame.image.load("images/United_Kingdom.jpg"))
 country_images.append(pygame.image.load("images/Germany.jpg"))
 country_images.append(pygame.image.load("images/France.jpg"))
 country_images.append(pygame.image.load("images/Sweden.jpg"))
-country_images.append(pygame.image.load("images/Denmark.jpg"))
 country_images.append(pygame.image.load("images/Italy.jpg"))
-country_images.append(pygame.image.load("images/Canada.jpg"))
+country_images.append(pygame.image.load("images/Denmark.jpg"))
 country_images.append(pygame.image.load("images/Spain.jpg"))
+country_images.append(pygame.image.load("images/Canada.jpg"))
 country_images.append(pygame.image.load("images/Poland.jpg"))
 
 for i, images in enumerate(country_images):
@@ -42,8 +42,8 @@ for i, images in enumerate(country_images):
 for images in country_images:
 	print images.get_width()
 
-screen_width = 640
-screen_height = 480
+screen_width = 900
+screen_height = 650
 screen = pygame.display.set_mode((screen_width, screen_height), 0, 32)
 
 pos_x = 0
